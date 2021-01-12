@@ -1,0 +1,52 @@
+# choosing docker compose version
+version: "3.8"
+
+# specifying servcies
+services:
+  # service 1 : backend
+  backend:
+    # build context
+    build:
+      # current directory
+      context: .
+      # dockerfile to be used
+      dockerfile: Dockerfile
+    command: 'python main.py'
+    ports:
+      # local port : container port mapping
+      - 8001:5000
+    volumes:
+      # syncing between local and container app directory '.' to 'app' folder
+      - .:/app
+    depends_on:
+      # this service is dependent on 'db' service
+      - db
+
+  # service 2 - rabbitmq queue service
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # starting to consume in flask side app
+    command: 'python consumer.py'
+    depends_on:
+      - db
+
+  # service 3 : for the database
+  db:
+    # choosing image for the container
+    image: mysql:5.7.22
+    # this container should always be restarted automatically in case of any error/shutdown
+    restart: always
+    # setting up some environment variables inside the container [can be chosen by you]
+    environment:
+      MYSQL_DATABASE: main
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      # syncing between local directory and container db to check inside if required
+      - .dbdata:/var/lib/mysql
+    ports:
+      # mapping local port to container db port to access it from outside
+      - 33067:3306
